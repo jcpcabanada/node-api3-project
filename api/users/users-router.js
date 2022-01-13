@@ -22,14 +22,14 @@ router.get('/:id', validateUserId, (req, res) => {
     res.json(req.user)
 });
 
-router.post('/', validateUser,(req, res, next) => {
+router.post('/', validateUser, (req, res, next) => {
     // RETURN THE NEWLY CREATED USER OBJECT
     // this needs a middleware to check that the request body is valid
     User.insert({name: req.name})
         .then(newUser => {
             res.status(201).json(newUser)
         })
-        .catch(e =>{
+        .catch(e => {
             next(e)
         })
 });
@@ -48,16 +48,26 @@ router.put('/:id', validateUserId, validateUser, (req, res, next) => {
         .catch(next)
 });
 
-router.delete('/:id', validateUserId, (req, res) => {
+router.delete('/:id', validateUserId, async (req, res, next) => {
     // RETURN THE FRESHLY DELETED USER OBJECT
     // this needs a middleware to verify user id
-    console.log(req.user)
+    try {
+        await User.remove(req.params.id)
+        res.json(req.user)
+    } catch (e) {
+        next(e)
+    }
 });
 
-router.get('/:id/posts', validateUserId, (req, res) => {
+router.get('/:id/posts', validateUserId, async (req, res, next) => {
     // RETURN THE ARRAY OF USER POSTS
     // this needs a middleware to verify user id
-    console.log(req.user)
+    try {
+        const result = await User.getUserPosts(req.params.id)
+        res.json(result)
+    } catch (e) {
+        next(e)
+    }
 });
 
 router.post('/:id/posts', validateUserId, validatePost, (req, res) => {
@@ -67,9 +77,9 @@ router.post('/:id/posts', validateUserId, validatePost, (req, res) => {
     console.log(req.user)
 });
 
-router.use((err,req,res,next)=>{
-    res.status( err.status || 500 ).json({
-        customMessage:'something broken in posts router',
+router.use((err, req, res, next) => {
+    res.status(err.status || 500).json({
+        customMessage: 'something broken in posts router',
         message: err.message,
         stack: err.stack,
     })
